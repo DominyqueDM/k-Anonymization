@@ -1,0 +1,8 @@
+Private;non-gov;*
+Self-emp-not-inc;non-gov;*
+Self-emp-inc;non-gov;*
+Federal-gov;gov;*
+State-gov;gov;*
+Local-gov;gov;*
+Never-worked;unemployed;*
+Without-pay;charity;*
