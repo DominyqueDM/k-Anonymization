@@ -2,9 +2,16 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-from run import get_results
+from run import write_to_file, get_graph
+from clustering import clustering_based_k_anon
 from tools.read_adult_data import read_data as read_adult
 from tools.read_adult_data import read_tree as read_adult_tree
+import sys
+import copy
+import pdb
+import random
+import cProfile
+import matplotlib.pyplot as plt
 
 DEFAULT_K = 2
 DATA = read_adult()
@@ -23,6 +30,7 @@ desclabel = tk.Label(text="Therefore, in order to protect the privacy of individ
 desclabel.pack()
 optlabel = tk.Label(text= "Here we are showing two different solutions. Please click one to find out more about it:", height= 3, justify="left")
 optlabel.pack()
+
 
 #Function to open K cluster
 def choiceBranch():
@@ -58,6 +66,88 @@ def preLoaded():
     Label(newWindow, text="PLEASE NOTE: The generalisation hierarchies can be found where the main dataset is (adult.data)").pack()
     Label(newWindow, text="7 attributes have been chosen as quasi-identifiers: age, workclass, marital status, occupation, sex, hours per week and income", wraplength=500).pack()
     Label(newWindow, text="There is currently 1000 rows of data in adult.data").pack()
+    Label(newWindow, text="  ").pack()
+    Button(newWindow, text='Run Program', command= runCluster, bg='red', fg='white').pack()
+    Label(newWindow, text="Please note that the program takes a few minutes to run").pack()
+    Label(newWindow, text="   ").pack()
+    Label(newWindow, text="If you would like a more detailed explanation as to how this works, please click the button below").pack()
+    Button(newWindow, text='Explain Please', command= explanations).pack()
+
+def runCluster():
+    newWindow = Toplevel(window)
+    newWindow.title("Efficient k-Anon with Clustering: PreLoaded Running")
+    newWindow.geometry("700x700")
+    Label(newWindow, text="Running the clustering based K-Anonymisation algorithm...",font=('Helvetica', 18, 'bold')).pack()
+    Label(newWindow, text="K starts at 2 and increments until 10. A countdown will appear of the k's as the program progresses.")
+    data = read_adult()
+    a_trees= read_adult_tree()
+    data_back = copy.deepcopy(data)
+    k=2
+    x= []
+    y= []
+    while (k<11):
+        Label(newWindow, text="k is: %d" %k).pack()
+        result, eval_result = clustering_based_k_anon(a_trees, data, k)
+        write_to_file(result, k)
+        data = copy.deepcopy(data_back)
+        Label(newWindow, text="NCP (degree of information loss): %0.2f" % eval_result[0] + "%").pack()
+        x.append(k)
+        y.append(eval_result[0])
+        Label(newWindow, text="Running time: %0.2f" % eval_result[1] + " seconds").pack()
+        print()
+        k= k+1
+    get_graph(x, y)
+
+def explanations():
+    newWindow = Toplevel(window)
+    myscrollbar=Scrollbar(newWindow,orient="vertical")
+    myscrollbar.pack(side="right",fill="y")
+    newWindow.title("Detailed Explanations of the Efficient K-Anonymization Program")
+    newWindow.geometry("800x500")
+    Label(newWindow, text="Steps in the K-Anonymization Process",font=('Helvetica', 18, 'bold')).pack()
+    Label(newWindow, text="    ").pack()
+    Label(newWindow, text="Step 1: Datasets and generalisation", font=(14)).pack()
+    Label(newWindow, text="For each of the quasi-identifiers, a hierachy generalisation was done such examples are: adult_workclass and adult_race").pack()
+    Label(newWindow, text="The data is read and stored in trees and based on what the generalisation hierarchies dictate, then certain data values will be overwritten with an asterisk (*)").pack()
+    Label(newWindow, text="It is very important that the generalisation hierarchies do not have unnecessary generalisations otherwise information loss is increased").pack()
+    Label(newWindow, text="    ").pack()
+    Label(newWindow, text="Step 2: Making the Clusters", font=(14)).pack()
+    Label(newWindow, text="Firstly, a random record, lets call it Ri, is picked from the data set and we make this a cluster, let's call it C1.").pack()
+    Label(newWindow, text="Then we chose a record, Rj that makes information loss minimal: IL(C1 U { Rj}).").pack()
+    Label(newWindow, text="We repeat this process until |C1| = k").pack()
+    Label(newWindow, text="When |C1| reaches k, we chose a record that is furthest from Ri and repeat the clustering process until there are less than k records left.").pack()
+    Label(newWindow, text="With the leftover clusters, we iterate over them and insert each record into a cluster with respect to which the increment of information loss is minimal").pack()
+    Label(newWindow, text="It is important to note that the number of clusters is not a requirement HOWEVER, each cluster must have at least k records").pack()
+    Label(newWindow, text="   ").pack()
+    Label(newWindow, text="Step 3: Metrics", font=(14)).pack()
+    Label(newWindow, text="There are two metrics being tested: running time and degree of information loss").pack()
+    Label(newWindow, text="We can see that the program does take a minute or two to complete running and that is because it is running for k=2, k=3 and so on until k=10").pack()
+    Label(newWindow, text="This is so as to give you an idea of how changing the value of k, can affect the utility of information").pack()
+    Label(newWindow, text="   ").pack()
+    Button(newWindow, text='Open Activity Section', command= openActivity).pack()
+
+def openActivity():
+    newWindow = Toplevel(window)
+    newWindow.title("Activity")
+    newWindow.geometry("800x500")
+    Label(newWindow, text="Activity", font=(14)).pack()
+    Label(newWindow, text="Here you will be able to open one of the anonymised text files and analyse it. There is a text file for each value of k").pack()
+    Label(newWindow, text="You can press 'back' to go ro the previous screen and open another activity screen so that you can place them side by side for comparisons.").pack()
+    txtarea = Text(newWindow, width=80, height=20)
+    txtarea.pack(pady=20)
+    path = Entry(newWindow)
+    path.pack(side=LEFT, expand=True, fill=X, padx=20)
+    Button(newWindow, text="Open File", command= openFile(path, txtarea)).pack(side=RIGHT, expand=True, fill=X, padx=20)
+    Button(newWindow, text='Back', command= explanations).pack()
+
+def openFile(path, txtarea):
+    tf= filedialog.askopenfilename(title="Open Data File", filetypes=(("Data Files", "*.data"),))
+    path.insert(END, tf)
+    tf = open(tf, 'r')
+    data= tf.read()
+    txtarea.insert(END, data)
+    tf.close()
+
 
 def uploadMainFile(event=None):
     filename = filedialog.askopenfilename()
