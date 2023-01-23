@@ -79,8 +79,9 @@ def distance_in_clusters(source, target):
 	"""
 	This function's purpose is to return the distance between
 	the source cluster/record and target cluster/record.
-	This uses Normalizes Certainity Penality which penalizes items
-	based on the way they are generalized. 
+	This uses Normalized Certainty Penality which is used 
+	in the generalisation calculations which determines the degree 
+	of information loss. 
 	"""
 	source_gen = source
 	target_gen = target
@@ -100,7 +101,7 @@ def distance_in_clusters(source, target):
 
 def diff_dist(record, cluster):
 	"""
-	Explanation: This functions need to return IL(c U {r}) - IL(c)
+	Explanation: This function need to return IL(c U {r}) - IL(c)
 	"""
 	IL_cluster_and_record = generalization(record, cluster.gen_result)
 	return NCP(IL_cluster_and_record) * (len(cluster) + 1) - cluster.IF_loss
@@ -108,6 +109,10 @@ def diff_dist(record, cluster):
 
 def NCP(record):
 
+	"""
+	Explanation: as mentioned above, this measures the degree of information loss
+
+	"""
 	ncp= 0.0
 	list_key = quasi_to_key(record)
 	try:
@@ -218,7 +223,6 @@ def find_best_cluster(record, clusters):
 	return min_i
 	
 def clustering_kmember(data, k=25):
-
 	clusters = []
 	rand_seed = random.randrange(len(data))
 	rand_i = data[rand_seed]
@@ -263,13 +267,14 @@ def init(a_trees, data, QI_num=-1):
 
 def clustering_based_k_anon(a_trees, data, k=10, QI_num=-1):
     """
-    the main function of clustering based k-anon
+    the main function of clustering based k-anon. This calls the kmember clustering function which outlines
+    the main functiosn to be done: distance calculations. 
     """
     init(a_trees, data, QI_num)
     result = []
     start_time = time.time()
-    print("K-Member Clustering beginning")
     clusters = clustering_kmember(data, k)
+    rtime = 0.0
     rtime = float(time.time() - start_time)
     ncp = 0.0
     for cluster in clusters:

@@ -1,3 +1,4 @@
+#This can be run on its on if yiu do not wish to use the interface
 from clustering import clustering_based_k_anon
 from tools.read_adult_data import read_data as read_adult
 from tools.read_adult_data import read_tree as read_adult_tree
